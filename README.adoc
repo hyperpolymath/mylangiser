@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+= Mylangiser
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+:toc: left
+:icons: font
+
+== What Is This?
+
+MyLangiser generates **progressive-disclosure interfaces** from complex APIs —
+four complexity levels from visual blocks to agentic orchestration.
+
+My-Lang is a progressive AI-native language with four dialects scaling from
+beginner to expert. MyLangiser applies this philosophy to existing APIs.
+
+== How It Works
+
+Describe your API in `mylangiser.toml`. MyLangiser:
+
+1. Analyses your API surface (functions, types, complexity)
+2. Generates four progressive disclosure levels:
+   - **Me-curious**: visual block interface (for learners)
+   - **Solo**: simplified typed API (for individual developers)
+   - **Duet**: human-AI pair programming interface
+   - **Ensemble**: full multi-agent orchestration API
+3. Each level exposes more capability without breaking simpler usage
+
+== Key Value
+
+* **APIs that teach themselves** — users graduate naturally
+* **Four complexity levels** — from beginner to expert
+* **AI-native** — built-in support for human-AI collaboration
+* **Education tool** — turn any library into a learning experience
+
+== Architecture
+
+Follows the hyperpolymath -iser pattern:
+manifest -> Idris2 ABI proof -> Zig FFI bridge -> target language codegen.
+Part of the https://github.com/hyperpolymath/iseriser[-iser family].
+
+== Status
+
+**Pre-alpha.** Architecture defined, scaffolding in place, codegen pending.
+
+== License
+
+SPDX-License-Identifier: PMPL-1.0-or-later
