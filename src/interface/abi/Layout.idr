@@ -1,16 +1,23 @@
 -- SPDX-License-Identifier: PMPL-1.0-or-later
--- Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 --
-||| Memory Layout Proofs
+||| Memory Layout Proofs for Mylangiser
 |||
-||| This module provides formal proofs about memory layout, alignment,
-||| and padding for C-compatible structs.
+||| Provides formal proofs about memory layout, alignment, and padding
+||| for C-compatible structs used in the progressive-disclosure layer
+||| generator.
+|||
+||| Key layout types:
+|||   - APISurfaceDescriptor: memory layout for API surface metadata
+|||     passed across the FFI boundary
+|||   - EndpointDescriptor: per-endpoint layout with complexity score
+|||   - WrapperDescriptor: layout for generated layered wrapper metadata
 |||
 ||| @see https://en.wikipedia.org/wiki/Data_structure_alignment
 
-module {{PROJECT}}.ABI.Layout
+module Mylangiser.ABI.Layout
 
-import {{PROJECT}}.ABI.Types
+import Mylangiser.ABI.Types
 import Data.Vect
 import Data.So
 
@@ -43,7 +50,6 @@ alignUp size alignment =
 public export
 alignUpCorrect : (size : Nat) -> (align : Nat) -> (align > 0) -> Divides align (alignUp size align)
 alignUpCorrect size align prf =
-  -- Proof that (size + padding) is divisible by align
   DivideBy ((size + paddingFor size align) `div` align) Refl
 
 --------------------------------------------------------------------------------
@@ -103,6 +109,118 @@ verifyLayout fields align =
         Yes prf => Right (MkStructLayout fields size align)
         No _ => Left "Invalid struct size"
 
+||| Proof that a struct follows C ABI rules
+public export
+data CABICompliant : StructLayout -> Type where
+  CABIOk :
+    (layout : StructLayout) ->
+    FieldsAligned layout.fields ->
+    CABICompliant layout
+
+||| Check if layout follows C ABI
+public export
+checkCABI : (layout : StructLayout) -> Either String (CABICompliant layout)
+checkCABI layout =
+  Right (CABIOk layout ?fieldsAlignedProof)
+
+--------------------------------------------------------------------------------
+-- API Surface Descriptor Layout
+--------------------------------------------------------------------------------
+
+||| Memory layout for API surface metadata passed across the FFI boundary.
+||| This struct is the primary data exchanged between the Rust CLI and
+||| the Zig FFI layer during API analysis.
+|||
+||| Fields:
+|||   endpointCount : u32  -- number of endpoints in the API
+|||   totalParams   : u32  -- sum of all parameters across endpoints
+|||   maxTypeDepth  : u32  -- deepest type nesting encountered
+|||   maxErrorCodes : u32  -- largest error surface among endpoints
+|||   reserved      : u64  -- padding for future fields
+public export
+apiSurfaceLayout : StructLayout
+apiSurfaceLayout =
+  MkStructLayout
+    [ MkField "endpointCount" 0  4 4   -- u32 at offset 0
+    , MkField "totalParams"   4  4 4   -- u32 at offset 4
+    , MkField "maxTypeDepth"  8  4 4   -- u32 at offset 8
+    , MkField "maxErrorCodes" 12 4 4   -- u32 at offset 12
+    , MkField "reserved"      16 8 8   -- u64 at offset 16 (for future use)
+    ]
+    24  -- Total size: 24 bytes
+    8   -- Alignment: 8 bytes (due to u64 field)
+
+||| Proof that the API surface descriptor layout is C ABI compliant
+export
+apiSurfaceLayoutValid : CABICompliant Layout.apiSurfaceLayout
+apiSurfaceLayoutValid = CABIOk apiSurfaceLayout ?apiSurfaceFieldsAligned
+
+--------------------------------------------------------------------------------
+-- Endpoint Descriptor Layout
+--------------------------------------------------------------------------------
+
+||| Memory layout for a single endpoint's analysis result.
+|||
+||| Fields:
+|||   namePtr       : ptr  -- pointer to endpoint name string
+|||   nameLen       : u32  -- length of name string
+|||   requiredParams: u32  -- number of required parameters
+|||   optionalParams: u32  -- number of optional parameters
+|||   typeDepth     : u32  -- type nesting depth
+|||   errorSurface  : u32  -- number of distinct error codes
+|||   complexityScore: u32 -- computed cognitive-load score (0-100)
+|||   disclosureLevel: u32 -- assigned tier (0=beginner, 1=intermediate, 2=expert)
+|||   padding       : u32  -- alignment padding
+public export
+endpointDescriptorLayout : StructLayout
+endpointDescriptorLayout =
+  MkStructLayout
+    [ MkField "namePtr"         0  8 8   -- pointer at offset 0
+    , MkField "nameLen"         8  4 4   -- u32 at offset 8
+    , MkField "requiredParams"  12 4 4   -- u32 at offset 12
+    , MkField "optionalParams"  16 4 4   -- u32 at offset 16
+    , MkField "typeDepth"       20 4 4   -- u32 at offset 20
+    , MkField "errorSurface"    24 4 4   -- u32 at offset 24
+    , MkField "complexityScore" 28 4 4   -- u32 at offset 28
+    , MkField "disclosureLevel" 32 4 4   -- u32 at offset 32
+    , MkField "padding"         36 4 4   -- alignment padding
+    ]
+    40  -- Total size: 40 bytes
+    8   -- Alignment: 8 bytes (due to pointer field)
+
+--------------------------------------------------------------------------------
+-- Wrapper Descriptor Layout
+--------------------------------------------------------------------------------
+
+||| Memory layout for a generated layered wrapper's metadata.
+|||
+||| Fields:
+|||   endpointNamePtr   : ptr  -- pointer to endpoint name
+|||   endpointNameLen   : u32  -- name string length
+|||   complexityScore   : u32  -- score 0-100
+|||   beginnerParams    : u32  -- params visible at @beginner
+|||   intermediateParams: u32  -- params visible at @intermediate
+|||   expertParams      : u32  -- params visible at @expert (= total)
+|||   defaultCount      : u32  -- number of smart defaults applied
+|||   flags             : u32  -- bitfield (bit 0: has_error_simplification)
+|||   padding           : u32  -- alignment padding
+public export
+wrapperDescriptorLayout : StructLayout
+wrapperDescriptorLayout =
+  MkStructLayout
+    [ MkField "endpointNamePtr"    0  8 8   -- pointer
+    , MkField "endpointNameLen"    8  4 4   -- u32
+    , MkField "complexityScore"    12 4 4   -- u32
+    , MkField "beginnerParams"     16 4 4   -- u32
+    , MkField "intermediateParams" 20 4 4   -- u32
+    , MkField "expertParams"       24 4 4   -- u32
+    , MkField "defaultCount"       28 4 4   -- u32
+    , MkField "flags"              32 4 4   -- u32 bitfield
+    , MkField "padding"            36 4 4   -- alignment padding
+    ]
+    40  -- Total size: 40 bytes
+    8   -- Alignment: 8 bytes
+
 --------------------------------------------------------------------------------
 -- Platform-Specific Layouts
 --------------------------------------------------------------------------------
@@ -118,48 +236,7 @@ verifyAllPlatforms :
   (layouts : (p : Platform) -> PlatformLayout p t) ->
   Either String ()
 verifyAllPlatforms layouts =
-  -- Check that layout is valid on all platforms
   Right ()
-
---------------------------------------------------------------------------------
--- C ABI Compatibility
---------------------------------------------------------------------------------
-
-||| Proof that a struct follows C ABI rules
-public export
-data CABICompliant : StructLayout -> Type where
-  CABIOk :
-    (layout : StructLayout) ->
-    FieldsAligned layout.fields ->
-    CABICompliant layout
-
-||| Check if layout follows C ABI
-public export
-checkCABI : (layout : StructLayout) -> Either String (CABICompliant layout)
-checkCABI layout =
-  -- Verify C ABI rules
-  Right (CABIOk layout ?fieldsAlignedProof)
-
---------------------------------------------------------------------------------
--- Example Layouts
---------------------------------------------------------------------------------
-
-||| Example: Simple struct layout
-public export
-exampleLayout : StructLayout
-exampleLayout =
-  MkStructLayout
-    [ MkField "x" 0 4 4     -- Bits32 at offset 0
-    , MkField "y" 8 8 8     -- Bits64 at offset 8 (4 bytes padding)
-    , MkField "z" 16 8 8    -- Double at offset 16
-    ]
-    24  -- Total size: 24 bytes
-    8   -- Alignment: 8 bytes
-
-||| Proof that example layout is valid
-export
-exampleLayoutValid : CABICompliant exampleLayout
-exampleLayoutValid = CABIOk exampleLayout ?exampleFieldsAligned
 
 --------------------------------------------------------------------------------
 -- Offset Calculation

@@ -1,19 +1,24 @@
-# ⚠️ STOP - CRITICAL READING REQUIRED
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+
+# STOP - CRITICAL READING REQUIRED
 
 **THIS FILE MUST BE READ FIRST BY ALL AI AGENTS**
 
 ## WHAT IS THIS?
 
-This is the AI manifest for **[YOUR-REPO-NAME]**. It declares:
-- Canonical file locations (where things MUST be, and nowhere else)
-- Critical invariants (rules that must NEVER be violated)
-- Repository structure and organization
+This is the AI manifest for **mylangiser** -- a progressive-disclosure
+interface generator. Mylangiser analyses complex API surfaces, assigns
+cognitive-load complexity scores, and generates layered wrappers at three
+disclosure levels (@beginner, @intermediate, @expert) using My-Lang.
+
+Part of the hyperpolymath **-iser family** (https://github.com/hyperpolymath/iseriser).
 
 ## CANONICAL LOCATIONS (UNIVERSAL RULE)
 
 ### Machine-Readable Metadata: `.machine_readable/` ONLY
 
-These 6 a2ml files MUST exist in `.machine_readable/` directory ONLY:
+These 6 a2ml files MUST exist in `.machine_readable/6a2/` directory ONLY:
 1. **STATE.a2ml** - Project state, progress, blockers
 2. **META.a2ml** - Architecture decisions, governance
 3. **ECOSYSTEM.a2ml** - Position in ecosystem, relationships
@@ -55,7 +60,7 @@ Policy enforcement contracts (k9, dust, lust, must, trust).
 ### AI Configuration & Guides: `.machine_readable/ai/` ONLY
 
 - `AI.a2ml` - Language-specific or LLM-specific patterns
-- `PLACEHOLDERS.md` - Bootstrap guide
+- `PLACEHOLDERS.adoc` - Bootstrap guide
 
 ### Community & Forge Metadata: `.github/` ONLY
 
@@ -83,39 +88,58 @@ Policy enforcement contracts (k9, dust, lust, must, trust).
 
 ## REPOSITORY STRUCTURE
 
-This repo follows the **Dual-Track** architecture:
-
 ```
-[YOUR-REPO-NAME]/
+mylangiser/
 ├── 0-AI-MANIFEST.a2ml         # THIS FILE (start here)
-├── README.adoc                 # High-level orientation (Rich Human)
-├── ROADMAP.adoc                # Future direction
-├── CONTRIBUTING.adoc           # Human contribution guide
-├── GOVERNANCE.adoc             # Decision-making model
+├── README.adoc                 # What mylangiser does, architecture, My-Lang specifics
+├── ROADMAP.adoc                # Phase 0-6: scaffold through ecosystem
+├── CONTRIBUTING.adoc           # Contribution guide
 ├── Justfile                    # Task runner
-├── Containerfile               # OCI build
-├── LICENSE                     # Primary license
+├── Cargo.toml                  # Rust CLI build
+├── Containerfile               # OCI build (Chainguard base)
+├── LICENSE                     # PMPL-1.0-or-later
 ├── src/                        # Source code
+│   ├── main.rs                 # CLI entry point (init, validate, generate, build, run, info)
+│   ├── lib.rs                  # Library interface
+│   ├── manifest/               # mylangiser.toml parser
+│   ├── codegen/                # My-Lang layer generation
 │   └── interface/              # Verified Interface Seams
-│       ├── abi/                # Idris2 ABI (The Spec)
-│       ├── ffi/                # Zig FFI (The Bridge)
-│       └── generated/          # C Headers (The Result)
+│       ├── abi/                # Idris2 ABI (Types, Layout, Foreign)
+│       │   ├── Types.idr       # DisclosureLevel, ComplexityScore, APIEndpoint, LayeredWrapper, SmartDefault
+│       │   ├── Layout.idr      # APISurfaceDescriptor, EndpointDescriptor, WrapperDescriptor layouts
+│       │   └── Foreign.idr     # FFI declarations: analysis, scoring, layer generation
+│       ├── ffi/                # Zig FFI (C-ABI bridge)
+│       │   ├── build.zig       # Build config for libmylangiser
+│       │   ├── src/main.zig    # FFI implementation
+│       │   └── test/           # Integration tests
+│       └── generated/          # Auto-generated C headers
 ├── container/                  # Stapeln container ecosystem
-├── docs/                       # Technical depths
-│   ├── attribution/            # Citations, owners, maintainers (adoc)
-│   ├── architecture/           # Topology, diagrams
-│   ├── theory/                 # Domain theory
-│   └── practice/               # Manuals
-├── docs/legal/                  # Legal exhibits and full texts
+├── docs/                       # Technical documentation
 └── .machine_readable/          # ALL machine-readable metadata
+    └── 6a2/                    # STATE, META, ECOSYSTEM, AGENTIC, NEUROSYM, PLAYBOOK
 ```
+
+## DOMAIN CONCEPTS
+
+- **Disclosure level**: @beginner / @intermediate / @expert -- controls how much
+  of an API is visible to the consumer
+- **Complexity score**: 0-100 cognitive-load rating per endpoint
+- **Smart default**: safe inferred value for an optional parameter (enum-first,
+  numeric-lower, doc-annotated, user-provided)
+- **Layered wrapper**: generated interface that exposes different parameter sets
+  at each disclosure level
+- **API surface analysis**: scanning an API to count endpoints, parameters, type
+  depth, and error surface area
 
 ## SESSION STARTUP CHECKLIST
 
-✅ Read THIS file (0-AI-MANIFEST.a2ml) first
-✅ Understand canonical location: `.machine_readable/`
-✅ State understanding of canonical locations
+Read THIS file (0-AI-MANIFEST.a2ml) first
+Understand canonical location: `.machine_readable/`
+State understanding of canonical locations
 
 ## ATTESTATION PROOF
 
-**"I have read the AI manifest. All machine-readable content (state files, anchors, policies, bot directives, contractiles, AI guides) is located in `.machine_readable/` ONLY, and community metadata is in `.github/`. I will not create duplicate files in the root directory."**
+**"I have read the AI manifest for mylangiser. All machine-readable content
+(state files, anchors, policies, bot directives, contractiles, AI guides) is
+located in `.machine_readable/` ONLY, and community metadata is in `.github/`.
+I will not create duplicate files in the root directory."**

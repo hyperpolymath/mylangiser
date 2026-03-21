@@ -6,13 +6,14 @@
   (version "0.1.0")
   (name "mylangiser")
   (type "tool")
-  (purpose "Generate progressive-disclosure interfaces via My-Lang")
+  (purpose "Analyse complex API surfaces and generate progressive-disclosure wrappers with @beginner/@intermediate/@expert levels via My-Lang")
 
   (position-in-ecosystem
     (family "-iser acceleration frameworks")
     (meta-framework "iseriser")
     (relationship "sibling")
-    (top-3 ("typedqliser" "chapeliser" "verisimiser")))
+    (top-3 ("typedqliser" "chapeliser" "verisimiser"))
+    (unique-value "Only -iser focused on API usability and progressive disclosure; all others target specific compute domains"))
 
   (related-projects
     (project "iseriser"
@@ -32,7 +33,10 @@
       (description "Database recovery via constraint propagation"))
     (project "proven"
       (relationship "dependency")
-      (description "Shared Idris2 verified library"))
+      (description "Shared Idris2 verified library — may share disclosure-level proofs"))
     (project "typell"
       (relationship "dependency")
-      (description "Type theory engine"))))
+      (description "Type theory engine — complexity scoring may leverage type analysis"))
+    (project "nextgen-languages"
+      (relationship "upstream")
+      (description "My-Lang language definition lives here; mylangiser consumes its spec"))))

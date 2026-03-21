@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# ANCHOR.a2ml - authoritative anchor for this repository
+# ANCHOR.a2ml - authoritative anchor for mylangiser
 
 [metadata]
 version = "1.0.0"
-last-updated = "{{CURRENT_DATE}}"
+last-updated = "2026-03-21"
 
 [anchor]
 schema = "hyperpolymath.anchor/1"
@@ -13,29 +13,31 @@ repo = "hyperpolymath/mylangiser"
 authority = "upstream-canonical"
 
 purpose = [
-  "Define canonical semantics and policy boundaries for this repository.",
-  "Declare what downstream/satellite repos can extend but not redefine.",
-  "Provide a stable golden path and invariant contract for release readiness.",
+  "Define canonical semantics for progressive-disclosure interface generation.",
+  "Declare the three disclosure levels (@beginner, @intermediate, @expert) as invariant.",
+  "Provide a stable golden path for API analysis, complexity scoring, and layer generation.",
 ]
 
 [identity]
-project = "{{PROJECT_NAME}}"
-kind = "{{PROJECT_KIND}}"                # language | library | service | tool
-one-sentence = "{{PROJECT_PURPOSE}}"
-domain = "{{PROJECT_DOMAIN}}"
+project = "mylangiser"
+kind = "tool"
+one-sentence = "Analyse complex API surfaces and generate progressive-disclosure wrappers via My-Lang"
+domain = "API usability, developer experience, progressive disclosure"
 
 [semantic-authority]
 policy = "canonical"
 
 owns = [
-  "Project semantics and specification",
-  "Invariant definitions and contractiles",
-  "Reference implementation behavior",
+  "Disclosure-level semantics (@beginner, @intermediate, @expert)",
+  "Complexity scoring algorithm and threshold definitions",
+  "Smart default inference rules and type-safety proofs",
+  "Layered wrapper generation pipeline",
+  "mylangiser.toml manifest schema",
 ]
 
 [implementation-policy]
 allowed = ["Rust", "Idris2", "Zig", "Scheme", "Shell", "Just", "AsciiDoc", "Markdown"]
-forbidden = ["Node.js", "npm"]
+forbidden = ["Node.js", "npm", "TypeScript", "Python", "Go"]
 
 [golden-path]
 smoke-test-command = [
@@ -44,7 +46,8 @@ smoke-test-command = [
 ]
 
 success-criteria = [
-  "Core tests pass",
+  "Core tests pass (cargo test)",
+  "Zig FFI tests pass (zig build test)",
   "Quality gates pass",
   "No unresolved critical security findings",
 ]
@@ -56,7 +59,7 @@ must-have-anchor = true
 must-have-golden-path = true
 
 [semantic-authority-files]
-language-spec = "SPECIFICATION.md"
-formal-proofs = "docs/proofs/PROOFS.adoc"
-type-theory = "docs/theory/THEORY.adoc"
-algorithms = "docs/theory/ALGORITHMS.adoc"
+abi-types = "src/interface/abi/Types.idr"
+abi-layout = "src/interface/abi/Layout.idr"
+abi-foreign = "src/interface/abi/Foreign.idr"
+ffi-impl = "src/interface/ffi/src/main.zig"

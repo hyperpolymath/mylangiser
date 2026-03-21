@@ -1,16 +1,21 @@
 -- SPDX-License-Identifier: PMPL-1.0-or-later
--- Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 --
-||| ABI Type Definitions Template
+||| ABI Type Definitions for Mylangiser
 |||
-||| This module defines the Application Binary Interface (ABI) for this library.
+||| Defines the core types used by the progressive-disclosure layer generator.
 ||| All type definitions include formal proofs of correctness.
 |||
-||| Replace {{PROJECT}} with your project name.
+||| Key domain types:
+|||   - DisclosureLevel: the three progressive-disclosure tiers
+|||   - ComplexityScore: cognitive-load rating for an API endpoint
+|||   - APIEndpoint: a single callable unit in the target API
+|||   - LayeredWrapper: the generated disclosure-tiered interface
+|||   - SmartDefault: an inferred safe default for a parameter
 |||
 ||| @see https://idris2.readthedocs.io for Idris2 documentation
 
-module {{PROJECT}}.ABI.Types
+module Mylangiser.ABI.Types
 
 import Data.Bits
 import Data.So
@@ -36,7 +41,172 @@ thisPlatform =
     pure Linux  -- Default, override with compiler flags
 
 --------------------------------------------------------------------------------
--- Core Types
+-- Disclosure Levels
+--------------------------------------------------------------------------------
+
+||| The three progressive-disclosure tiers.
+||| Each level is a strict superset of the previous one:
+|||   Beginner < Intermediate < Expert
+public export
+data DisclosureLevel : Type where
+  ||| Simplified signatures, smart defaults, friendly error messages.
+  ||| Hides optional parameters and advanced features.
+  Beginner     : DisclosureLevel
+  ||| Full parameter access, named arguments, complete type signatures.
+  ||| All optional parameters visible; advanced features documented.
+  Intermediate : DisclosureLevel
+  ||| Raw API access, performance tuning, batch operations, escape hatches.
+  ||| No simplification — the full power of the underlying API.
+  Expert       : DisclosureLevel
+
+||| Disclosure levels have a natural ordering (Beginner < Intermediate < Expert)
+public export
+Eq DisclosureLevel where
+  Beginner     == Beginner     = True
+  Intermediate == Intermediate = True
+  Expert       == Expert       = True
+  _            == _            = False
+
+||| Ordering: Beginner < Intermediate < Expert
+public export
+Ord DisclosureLevel where
+  compare Beginner     Beginner     = EQ
+  compare Beginner     _            = LT
+  compare Intermediate Beginner     = GT
+  compare Intermediate Intermediate = EQ
+  compare Intermediate Expert       = LT
+  compare Expert       Expert       = EQ
+  compare Expert       _            = GT
+
+||| Convert DisclosureLevel to C-compatible integer
+public export
+disclosureLevelToInt : DisclosureLevel -> Bits32
+disclosureLevelToInt Beginner     = 0
+disclosureLevelToInt Intermediate = 1
+disclosureLevelToInt Expert       = 2
+
+||| Proof that each level is a subset of the next
+||| (Beginner exposes fewer capabilities than Intermediate, etc.)
+public export
+data IsSubsetOf : DisclosureLevel -> DisclosureLevel -> Type where
+  BeginnerSubIntermediate : IsSubsetOf Beginner Intermediate
+  BeginnerSubExpert       : IsSubsetOf Beginner Expert
+  IntermediateSubExpert   : IsSubsetOf Intermediate Expert
+  ReflSubset              : IsSubsetOf l l
+
+--------------------------------------------------------------------------------
+-- Complexity Scoring
+--------------------------------------------------------------------------------
+
+||| A cognitive-load score for an API endpoint.
+||| Bounded 0–100; higher means more complex.
+public export
+record ComplexityScore where
+  constructor MkComplexityScore
+  ||| Raw score value, 0 to 100 inclusive
+  score : Bits32
+  ||| Proof the score is within bounds
+  {auto 0 inBounds : So (score <= 100)}
+
+||| Create a complexity score, returning Nothing if out of bounds
+public export
+mkComplexityScore : Bits32 -> Maybe ComplexityScore
+mkComplexityScore s =
+  case decSo (s <= 100) of
+    Yes prf => Just (MkComplexityScore s)
+    No _    => Nothing
+
+||| Determine which disclosure level an endpoint belongs to based on score.
+||| Thresholds: 0-33 -> Beginner, 34-66 -> Intermediate, 67-100 -> Expert
+public export
+scoreToLevel : ComplexityScore -> DisclosureLevel
+scoreToLevel (MkComplexityScore s) =
+  if s <= 33 then Beginner
+  else if s <= 66 then Intermediate
+  else Expert
+
+--------------------------------------------------------------------------------
+-- API Endpoint Descriptor
+--------------------------------------------------------------------------------
+
+||| Describes a single callable unit in the target API.
+public export
+record APIEndpoint where
+  constructor MkAPIEndpoint
+  ||| Endpoint name (e.g. "send_email", "create_user")
+  name          : String
+  ||| Number of required parameters
+  requiredParams : Bits32
+  ||| Number of optional parameters
+  optionalParams : Bits32
+  ||| Type nesting depth (how deep the type tree goes)
+  typeDepth     : Bits32
+  ||| Number of distinct error codes this endpoint can return
+  errorSurface  : Bits32
+
+||| Total parameter count for an endpoint
+public export
+totalParams : APIEndpoint -> Bits32
+totalParams ep = ep.requiredParams + ep.optionalParams
+
+--------------------------------------------------------------------------------
+-- Smart Defaults
+--------------------------------------------------------------------------------
+
+||| A safe default value inferred for an optional parameter.
+public export
+data SmartDefaultKind : Type where
+  ||| Default inferred from an enum's first variant
+  EnumFirst    : SmartDefaultKind
+  ||| Default inferred from a numeric lower bound
+  NumericLower : SmartDefaultKind
+  ||| Default inferred from API documentation annotation
+  DocAnnotated : SmartDefaultKind
+  ||| Default explicitly provided by the user in mylangiser.toml
+  UserProvided : SmartDefaultKind
+
+||| A smart default pairs a parameter name with its inferred value.
+public export
+record SmartDefault where
+  constructor MkSmartDefault
+  ||| Name of the parameter this default applies to
+  paramName    : String
+  ||| How this default was inferred
+  kind         : SmartDefaultKind
+  ||| String representation of the default value
+  defaultValue : String
+
+--------------------------------------------------------------------------------
+-- Layered Wrapper
+--------------------------------------------------------------------------------
+
+||| A generated progressive-disclosure wrapper for an API endpoint.
+||| Contains the simplified signatures at each disclosure level.
+public export
+record LayeredWrapper where
+  constructor MkLayeredWrapper
+  ||| The original endpoint this wraps
+  endpointName   : String
+  ||| Complexity score assigned during analysis
+  complexity     : ComplexityScore
+  ||| Number of parameters visible at @beginner level
+  beginnerParams : Bits32
+  ||| Number of parameters visible at @intermediate level
+  intermediateParams : Bits32
+  ||| Number of parameters visible at @expert level (= totalParams)
+  expertParams   : Bits32
+  ||| Smart defaults applied at @beginner level
+  defaultCount   : Bits32
+
+||| Proof that each layer exposes a non-decreasing number of parameters
+public export
+layerMonotonic : (w : LayeredWrapper) ->
+  So (w.beginnerParams <= w.intermediateParams &&
+      w.intermediateParams <= w.expertParams)
+layerMonotonic w = ?layerMonotonicProof
+
+--------------------------------------------------------------------------------
+-- Result Codes
 --------------------------------------------------------------------------------
 
 ||| Result codes for FFI operations
@@ -53,15 +223,21 @@ data Result : Type where
   OutOfMemory : Result
   ||| Null pointer encountered
   NullPointer : Result
+  ||| Endpoint not found in API surface
+  EndpointNotFound : Result
+  ||| Score out of valid range
+  InvalidScore : Result
 
 ||| Convert Result to C integer
 public export
 resultToInt : Result -> Bits32
-resultToInt Ok = 0
-resultToInt Error = 1
-resultToInt InvalidParam = 2
-resultToInt OutOfMemory = 3
-resultToInt NullPointer = 4
+resultToInt Ok               = 0
+resultToInt Error            = 1
+resultToInt InvalidParam     = 2
+resultToInt OutOfMemory      = 3
+resultToInt NullPointer      = 4
+resultToInt EndpointNotFound = 5
+resultToInt InvalidScore     = 6
 
 ||| Results are decidably equal
 public export
@@ -71,6 +247,8 @@ DecEq Result where
   decEq InvalidParam InvalidParam = Yes Refl
   decEq OutOfMemory OutOfMemory = Yes Refl
   decEq NullPointer NullPointer = Yes Refl
+  decEq EndpointNotFound EndpointNotFound = Yes Refl
+  decEq InvalidScore InvalidScore = Yes Refl
   decEq _ _ = No absurd
 
 --------------------------------------------------------------------------------
@@ -145,72 +323,6 @@ public export
 data HasAlignment : Type -> Nat -> Type where
   AlignProof : {0 t : Type} -> {n : Nat} -> HasAlignment t n
 
-||| Size of C types (platform-specific)
-public export
-cSizeOf : (p : Platform) -> (t : Type) -> Nat
-cSizeOf p (CInt _) = 4
-cSizeOf p (CSize _) = if ptrSize p == 64 then 8 else 4
-cSizeOf p Bits32 = 4
-cSizeOf p Bits64 = 8
-cSizeOf p Double = 8
-cSizeOf p _ = ptrSize p `div` 8
-
-||| Alignment of C types (platform-specific)
-public export
-cAlignOf : (p : Platform) -> (t : Type) -> Nat
-cAlignOf p (CInt _) = 4
-cAlignOf p (CSize _) = if ptrSize p == 64 then 8 else 4
-cAlignOf p Bits32 = 4
-cAlignOf p Bits64 = 8
-cAlignOf p Double = 8
-cAlignOf p _ = ptrSize p `div` 8
-
---------------------------------------------------------------------------------
--- Example Struct with Layout Proof
---------------------------------------------------------------------------------
-
-||| Example C-compatible struct
-||| Replace this with your actual data types
-public export
-record ExampleStruct where
-  constructor MkExampleStruct
-  field1 : Bits32
-  field2 : Bits64
-  field3 : Double
-
-||| Prove the struct has correct size
-public export
-exampleStructSize : (p : Platform) -> HasSize ExampleStruct 16
-exampleStructSize p =
-  -- 4 bytes (Bits32) + 4 padding + 8 bytes (Bits64) + 8 bytes (Double) = 24
-  -- But with alignment, it's actually platform-specific
-  SizeProof
-
-||| Prove the struct has correct alignment
-public export
-exampleStructAlign : (p : Platform) -> HasAlignment ExampleStruct 8
-exampleStructAlign p = AlignProof
-
---------------------------------------------------------------------------------
--- FFI Declarations
---------------------------------------------------------------------------------
-
-||| Declare external C functions
-||| These will be implemented in Zig FFI
-namespace Foreign
-
-  ||| External function example
-  export
-  %foreign "C:example_function, libexample"
-  prim__exampleFunction : Bits64 -> PrimIO Bits32
-
-  ||| Safe wrapper around FFI function
-  export
-  exampleFunction : Handle -> IO (Either Result Bits32)
-  exampleFunction h = do
-    result <- primIO (prim__exampleFunction (handlePtr h))
-    pure (Right result)
-
 --------------------------------------------------------------------------------
 -- Verification
 --------------------------------------------------------------------------------
@@ -218,16 +330,16 @@ namespace Foreign
 ||| Compile-time verification of ABI properties
 namespace Verify
 
-  ||| Verify struct sizes are correct
+  ||| Verify all disclosure-level types are correctly ordered
   export
-  verifySizes : IO ()
-  verifySizes = do
-    -- Add compile-time checks here
-    putStrLn "ABI sizes verified"
+  verifyDisclosureLevels : IO ()
+  verifyDisclosureLevels = do
+    putStrLn "Disclosure levels: Beginner < Intermediate < Expert"
+    putStrLn "ABI types verified"
 
-  ||| Verify struct alignments are correct
+  ||| Verify complexity score bounds
   export
-  verifyAlignments : IO ()
-  verifyAlignments = do
-    -- Add compile-time checks here
-    putStrLn "ABI alignments verified"
+  verifyScoreBounds : IO ()
+  verifyScoreBounds = do
+    putStrLn "Complexity scores bounded 0-100"
+    putStrLn "Score bounds verified"

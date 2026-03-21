@@ -1,18 +1,20 @@
 -- SPDX-License-Identifier: PMPL-1.0-or-later
--- Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 --
-||| Foreign Function Interface Declarations
+||| Foreign Function Interface Declarations for Mylangiser
 |||
-||| This module declares all C-compatible functions that will be
-||| implemented in the Zig FFI layer.
+||| Declares all C-compatible functions implemented in the Zig FFI layer.
+||| These functions cover the full lifecycle of progressive-disclosure
+||| generation: library init, API surface analysis, complexity scoring,
+||| disclosure-level assignment, and layered wrapper generation.
 |||
 ||| All functions are declared here with type signatures and safety proofs.
-||| Implementations live in ffi/zig/
+||| Implementations live in src/interface/ffi/src/main.zig
 
-module {{PROJECT}}.ABI.Foreign
+module Mylangiser.ABI.Foreign
 
-import {{PROJECT}}.ABI.Types
-import {{PROJECT}}.ABI.Layout
+import Mylangiser.ABI.Types
+import Mylangiser.ABI.Layout
 
 %default total
 
@@ -20,13 +22,13 @@ import {{PROJECT}}.ABI.Layout
 -- Library Lifecycle
 --------------------------------------------------------------------------------
 
-||| Initialize the library
-||| Returns a handle to the library instance, or Nothing on failure
+||| Initialise the mylangiser library.
+||| Returns a handle to the library instance, or Nothing on failure.
 export
-%foreign "C:{{project}}_init, lib{{project}}"
+%foreign "C:mylangiser_init, libmylangiser"
 prim__init : PrimIO Bits64
 
-||| Safe wrapper for library initialization
+||| Safe wrapper for library initialisation
 export
 init : IO (Maybe Handle)
 init = do
@@ -35,7 +37,7 @@ init = do
 
 ||| Clean up library resources
 export
-%foreign "C:{{project}}_free, lib{{project}}"
+%foreign "C:mylangiser_free, libmylangiser"
 prim__free : Bits64 -> PrimIO ()
 
 ||| Safe wrapper for cleanup
@@ -44,22 +46,116 @@ free : Handle -> IO ()
 free h = primIO (prim__free (handlePtr h))
 
 --------------------------------------------------------------------------------
--- Core Operations
+-- API Surface Analysis
 --------------------------------------------------------------------------------
 
-||| Example operation: process data
+||| Analyse an API surface from a serialised manifest buffer.
+||| Populates the internal endpoint table; call after init.
+||| Returns 0 on success, error code otherwise.
 export
-%foreign "C:{{project}}_process, lib{{project}}"
-prim__process : Bits64 -> Bits32 -> PrimIO Bits32
+%foreign "C:mylangiser_analyse_surface, libmylangiser"
+prim__analyseSurface : Bits64 -> Bits64 -> Bits32 -> PrimIO Bits32
 
-||| Safe wrapper with error handling
+||| Safe wrapper: analyse API surface from a manifest buffer
 export
-process : Handle -> Bits32 -> IO (Either Result Bits32)
-process h input = do
-  result <- primIO (prim__process (handlePtr h) input)
+analyseSurface : Handle -> (bufferPtr : Bits64) -> (bufferLen : Bits32) -> IO (Either Result ())
+analyseSurface h buf len = do
+  result <- primIO (prim__analyseSurface (handlePtr h) buf len)
   pure $ case result of
-    0 => Left Error
-    n => Right n
+    0 => Right ()
+    2 => Left InvalidParam
+    5 => Left EndpointNotFound
+    _ => Left Error
+
+||| Get the number of endpoints discovered during analysis
+export
+%foreign "C:mylangiser_endpoint_count, libmylangiser"
+prim__endpointCount : Bits64 -> PrimIO Bits32
+
+||| Safe wrapper: get endpoint count
+export
+endpointCount : Handle -> IO Bits32
+endpointCount h = primIO (prim__endpointCount (handlePtr h))
+
+--------------------------------------------------------------------------------
+-- Complexity Scoring
+--------------------------------------------------------------------------------
+
+||| Compute complexity scores for all analysed endpoints.
+||| Must be called after analyseSurface. Populates internal score table.
+export
+%foreign "C:mylangiser_compute_scores, libmylangiser"
+prim__computeScores : Bits64 -> PrimIO Bits32
+
+||| Safe wrapper: compute complexity scores
+export
+computeScores : Handle -> IO (Either Result ())
+computeScores h = do
+  result <- primIO (prim__computeScores (handlePtr h))
+  pure $ case result of
+    0 => Right ()
+    _ => Left Error
+
+||| Get the complexity score for a specific endpoint by index.
+||| Returns the score (0-100) or an error code.
+export
+%foreign "C:mylangiser_get_score, libmylangiser"
+prim__getScore : Bits64 -> Bits32 -> PrimIO Bits32
+
+||| Safe wrapper: get complexity score for an endpoint
+export
+getScore : Handle -> (endpointIndex : Bits32) -> IO (Either Result ComplexityScore)
+getScore h idx = do
+  raw <- primIO (prim__getScore (handlePtr h) idx)
+  pure $ case mkComplexityScore raw of
+    Just s  => Right s
+    Nothing => Left InvalidScore
+
+--------------------------------------------------------------------------------
+-- Layer Generation
+--------------------------------------------------------------------------------
+
+||| Generate layered wrappers for all endpoints.
+||| Must be called after computeScores. Allocates internal wrapper table.
+export
+%foreign "C:mylangiser_generate_layers, libmylangiser"
+prim__generateLayers : Bits64 -> PrimIO Bits32
+
+||| Safe wrapper: generate disclosure-level layers
+export
+generateLayers : Handle -> IO (Either Result ())
+generateLayers h = do
+  result <- primIO (prim__generateLayers (handlePtr h))
+  pure $ case result of
+    0 => Right ()
+    _ => Left Error
+
+||| Get the assigned disclosure level for an endpoint by index.
+||| Returns 0=Beginner, 1=Intermediate, 2=Expert.
+export
+%foreign "C:mylangiser_get_level, libmylangiser"
+prim__getLevel : Bits64 -> Bits32 -> PrimIO Bits32
+
+||| Safe wrapper: get disclosure level for an endpoint
+export
+getLevel : Handle -> (endpointIndex : Bits32) -> IO (Either Result DisclosureLevel)
+getLevel h idx = do
+  raw <- primIO (prim__getLevel (handlePtr h) idx)
+  pure $ case raw of
+    0 => Right Beginner
+    1 => Right Intermediate
+    2 => Right Expert
+    _ => Left InvalidParam
+
+||| Get the number of smart defaults applied to an endpoint.
+export
+%foreign "C:mylangiser_default_count, libmylangiser"
+prim__defaultCount : Bits64 -> Bits32 -> PrimIO Bits32
+
+||| Safe wrapper: get smart default count for an endpoint
+export
+defaultCount : Handle -> (endpointIndex : Bits32) -> IO Bits32
+defaultCount h idx = primIO (prim__defaultCount (handlePtr h) idx)
 
 --------------------------------------------------------------------------------
 -- String Operations
@@ -72,12 +168,12 @@ prim__getString : Bits64 -> String
 
 ||| Free C string
 export
-%foreign "C:{{project}}_free_string, lib{{project}}"
+%foreign "C:mylangiser_free_string, libmylangiser"
 prim__freeString : Bits64 -> PrimIO ()
 
 ||| Get string result from library
 export
-%foreign "C:{{project}}_get_string, lib{{project}}"
+%foreign "C:mylangiser_get_string, libmylangiser"
 prim__getResult : Bits64 -> PrimIO Bits64
 
 ||| Safe string getter
@@ -93,39 +189,12 @@ getString h = do
       pure (Just str)
 
 --------------------------------------------------------------------------------
--- Array/Buffer Operations
---------------------------------------------------------------------------------
-
-||| Process array data
-export
-%foreign "C:{{project}}_process_array, lib{{project}}"
-prim__processArray : Bits64 -> Bits64 -> Bits32 -> PrimIO Bits32
-
-||| Safe array processor
-export
-processArray : Handle -> (buffer : Bits64) -> (len : Bits32) -> IO (Either Result ())
-processArray h buf len = do
-  result <- primIO (prim__processArray (handlePtr h) buf len)
-  pure $ case resultFromInt result of
-    Just Ok => Right ()
-    Just err => Left err
-    Nothing => Left Error
-  where
-    resultFromInt : Bits32 -> Maybe Result
-    resultFromInt 0 = Just Ok
-    resultFromInt 1 = Just Error
-    resultFromInt 2 = Just InvalidParam
-    resultFromInt 3 = Just OutOfMemory
-    resultFromInt 4 = Just NullPointer
-    resultFromInt _ = Nothing
-
---------------------------------------------------------------------------------
 -- Error Handling
 --------------------------------------------------------------------------------
 
 ||| Get last error message
 export
-%foreign "C:{{project}}_last_error, lib{{project}}"
+%foreign "C:mylangiser_last_error, libmylangiser"
 prim__lastError : PrimIO Bits64
 
 ||| Retrieve last error as string
@@ -140,11 +209,13 @@ lastError = do
 ||| Get error description for result code
 export
 errorDescription : Result -> String
-errorDescription Ok = "Success"
-errorDescription Error = "Generic error"
-errorDescription InvalidParam = "Invalid parameter"
-errorDescription OutOfMemory = "Out of memory"
-errorDescription NullPointer = "Null pointer"
+errorDescription Ok               = "Success"
+errorDescription Error            = "Generic error"
+errorDescription InvalidParam     = "Invalid parameter"
+errorDescription OutOfMemory      = "Out of memory"
+errorDescription NullPointer      = "Null pointer"
+errorDescription EndpointNotFound = "Endpoint not found in API surface"
+errorDescription InvalidScore     = "Complexity score out of valid range (0-100)"
 
 --------------------------------------------------------------------------------
 -- Version Information
@@ -152,7 +223,7 @@ errorDescription NullPointer = "Null pointer"
 
 ||| Get library version
 export
-%foreign "C:{{project}}_version, lib{{project}}"
+%foreign "C:mylangiser_version, libmylangiser"
 prim__version : PrimIO Bits64
 
 ||| Get version as string
@@ -164,7 +235,7 @@ version = do
 
 ||| Get library build info
 export
-%foreign "C:{{project}}_build_info, lib{{project}}"
+%foreign "C:mylangiser_build_info, libmylangiser"
 prim__buildInfo : PrimIO Bits64
 
 ||| Get build information
@@ -175,34 +246,15 @@ buildInfo = do
   pure (prim__getString ptr)
 
 --------------------------------------------------------------------------------
--- Callback Support
---------------------------------------------------------------------------------
-
-||| Callback function type (C ABI)
-public export
-Callback : Type
-Callback = Bits64 -> Bits32 -> Bits32
-
-||| Register a callback
-export
-%foreign "C:{{project}}_register_callback, lib{{project}}"
-prim__registerCallback : Bits64 -> AnyPtr -> PrimIO Bits32
-
--- TODO: Implement safe callback registration.
--- The callback must be wrapped via a proper FFI callback mechanism.
--- Do NOT use cast — it is banned per project safety standards.
--- See: https://idris2.readthedocs.io/en/latest/ffi/ffi.html#callbacks
-
---------------------------------------------------------------------------------
 -- Utility Functions
 --------------------------------------------------------------------------------
 
-||| Check if library is initialized
+||| Check if library is initialised
 export
-%foreign "C:{{project}}_is_initialized, lib{{project}}"
+%foreign "C:mylangiser_is_initialized, libmylangiser"
 prim__isInitialized : Bits64 -> PrimIO Bits32
 
-||| Check initialization status
+||| Check initialisation status
 export
 isInitialized : Handle -> IO Bool
 isInitialized h = do
