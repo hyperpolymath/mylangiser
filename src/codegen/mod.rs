@@ -36,7 +36,10 @@ pub fn generate_all(manifest: &Manifest, output_dir: &str) -> Result<()> {
     let scored = scorer::score_all_endpoints(&manifest.endpoints, &manifest.levels);
     println!("Scored {} endpoints:", scored.len());
     for (name, score, level) in &scored {
-        println!("  {} — complexity: {}, level: {:?}", name, score.value, level);
+        println!(
+            "  {} — complexity: {}, level: {:?}",
+            name, score.value, level
+        );
     }
 
     // Phase 2: Generate layered wrappers.

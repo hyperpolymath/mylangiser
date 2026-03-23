@@ -174,10 +174,7 @@ mod tests {
     fn test_level_assignment_intermediate() {
         let levels = LevelConfig::default();
         let score = ComplexityScore { value: 50 };
-        assert_eq!(
-            assign_level(&score, &levels),
-            DisclosureLevel::Intermediate
-        );
+        assert_eq!(assign_level(&score, &levels), DisclosureLevel::Intermediate);
     }
 
     #[test]

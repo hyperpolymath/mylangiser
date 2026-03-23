@@ -81,7 +81,10 @@ fn test_complexity_scoring() {
     let scored = score_all_endpoints(&m.endpoints, &m.levels);
 
     // get_user (1 param, 1 required) should have the lowest score.
-    let get_user = scored.iter().find(|(name, _, _)| name == "get_user").unwrap();
+    let get_user = scored
+        .iter()
+        .find(|(name, _, _)| name == "get_user")
+        .unwrap();
     // create_user (6 params, 2 required) should be moderate.
     let create_user = scored
         .iter()
@@ -221,10 +224,7 @@ fn test_expert_layer() {
         create_user.expert_signature.len()
     );
 
-    let search = layers
-        .iter()
-        .find(|l| l.endpoint_name == "search")
-        .unwrap();
+    let search = layers.iter().find(|l| l.endpoint_name == "search").unwrap();
 
     // Expert search should have all 7 params.
     assert_eq!(
@@ -296,10 +296,7 @@ fn test_smart_defaults() {
     );
 
     // search endpoint: 'limit' and 'page' should have defaults.
-    let search = layers
-        .iter()
-        .find(|l| l.endpoint_name == "search")
-        .unwrap();
+    let search = layers.iter().find(|l| l.endpoint_name == "search").unwrap();
     let search_default_names: Vec<&str> = search
         .smart_defaults
         .iter()
@@ -319,7 +316,10 @@ fn test_smart_defaults() {
         .iter()
         .find(|sd| sd.param_name == "limit")
         .unwrap();
-    assert_eq!(limit_default.default_value, "20", "limit default should be 20");
+    assert_eq!(
+        limit_default.default_value, "20",
+        "limit default should be 20"
+    );
 }
 
 // ============================================================

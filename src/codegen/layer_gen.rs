@@ -12,7 +12,7 @@
 use std::collections::HashMap;
 
 use crate::abi::{DisclosureLevel, LayeredWrapper, SmartDefault};
-use crate::codegen::parser::{parse_endpoint_params, ParsedParam};
+use crate::codegen::parser::{ParsedParam, parse_endpoint_params};
 use crate::manifest::{EndpointDef, Manifest};
 
 /// Generate the full set of layered wrappers for all endpoints in the manifest.
@@ -42,7 +42,7 @@ fn generate_endpoint_layers(
     let beginner_params: Vec<String> = params
         .iter()
         .filter(|p| !p.optional)
-        .map(|p| format_param(p))
+        .map(format_param)
         .collect();
 
     // Intermediate layer: required + optional params that have a known default
@@ -50,16 +50,12 @@ fn generate_endpoint_layers(
     // deferred to expert level.
     let intermediate_params: Vec<String> = params
         .iter()
-        .filter(|p| {
-            !p.optional
-                || defaults.contains_key(&p.name)
-                || is_commonly_used_type(p)
-        })
-        .map(|p| format_param(p))
+        .filter(|p| !p.optional || defaults.contains_key(&p.name) || is_commonly_used_type(p))
+        .map(format_param)
         .collect();
 
     // Expert layer: all params.
-    let expert_params: Vec<String> = params.iter().map(|p| format_param(p)).collect();
+    let expert_params: Vec<String> = params.iter().map(format_param).collect();
 
     // Generate the wrapper code strings for each level.
     let beginner_code = generate_wrapper_code(
@@ -158,10 +154,7 @@ fn generate_wrapper_code(
     };
 
     let mut lines = Vec::new();
-    lines.push(format!(
-        "/// {}-level wrapper for `{}`",
-        level_prefix, name
-    ));
+    lines.push(format!("/// {}-level wrapper for `{}`", level_prefix, name));
     lines.push(format!(
         "fn {}_{}({}) {{",
         level_prefix,

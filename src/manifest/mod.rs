@@ -136,11 +136,7 @@ pub fn validate(manifest: &Manifest) -> Result<()> {
             anyhow::bail!("endpoint '{}' must have at least one parameter", ep.name);
         }
         // Verify all required params exist in the params list (by base name).
-        let param_names: Vec<String> = ep
-            .params
-            .iter()
-            .map(|p| extract_param_name(p))
-            .collect();
+        let param_names: Vec<String> = ep.params.iter().map(|p| extract_param_name(p)).collect();
         for req in &ep.required {
             if !param_names.contains(req) {
                 anyhow::bail!(
