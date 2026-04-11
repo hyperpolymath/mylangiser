@@ -1,55 +1,27 @@
-;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
-;; META.a2ml — Meta-level information for mylangiser
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# META.a2ml — Mylangiser meta-level information
+[metadata]
+version = "0.1.0"
+last-updated = "2026-03-21"
 
-(meta
-  (version "0.1.0")
-  (last-updated "2026-03-21")
+[project-info]
+license = "PMPL-1.0-or-later"
+author = "Jonathan D.A. Jewell (hyperpolymath)"
 
-  (architecture-decisions
-    (adr "001-progressive-disclosure"
-      (status "accepted")
-      (context "Complex APIs have steep learning curves; users must learn everything before they can do anything")
-      (decision "Generate three disclosure tiers (@beginner, @intermediate, @expert) where each is a strict superset of the previous")
-      (consequences "Users start simple, grow into power features; layer correctness verified by Idris2 proofs"))
+[architecture-decisions]
+decisions = [
+  # No ADRs recorded
+]
 
-    (adr "002-complexity-scoring"
-      (status "accepted")
-      (context "Need an automated way to decide which endpoints belong at which disclosure level")
-      (decision "Compute a cognitive-load score (0-100) per endpoint based on parameter count, type depth, and error surface")
-      (consequences "Deterministic, reproducible tier assignment; configurable thresholds in mylangiser.toml"))
+[development-practices]
+versioning = "SemVer"
+documentation = "AsciiDoc"
+build-tool = "just"
 
-    (adr "003-smart-defaults"
-      (status "accepted")
-      (context "@beginner wrappers need fewer parameters, so hidden parameters need safe values")
-      (decision "Infer defaults from type constraints (enum first variant, numeric lower bound), API docs, or user overrides")
-      (consequences "Beginner code works out of the box; defaults are provably type-safe via Idris2"))
-
-    (adr "004-abi-ffi-standard"
-      (status "accepted")
-      (context "Need verified interop between Rust CLI, Zig runtime, and generated My-Lang code")
-      (decision "Idris2 ABI for formal proofs (DisclosureLevel, ComplexityScore, LayeredWrapper), Zig FFI for C-ABI bridge")
-      (consequences "Compile-time correctness guarantees; zero runtime overhead from proofs"))
-
-    (adr "005-rsr-template"
-      (status "accepted")
-      (context "Need consistent project structure across 29+ -iser repos")
-      (decision "All repos cloned from rsr-template-repo with full CI/CD and governance")
-      (consequences "17 workflows, SECURITY.md, CONTRIBUTING, bot directives from day one")))
-
-  (development-practices
-    (language "Rust" (purpose "CLI orchestration, manifest parsing, codegen pipeline"))
-    (language "Idris2" (purpose "ABI formal proofs: layer subset correctness, smart-default safety, layout verification"))
-    (language "Zig" (purpose "FFI C-ABI bridge: API analysis runtime, complexity scoring, layer generation"))
-    (build-tool "cargo")
-    (ci "GitHub Actions (17 workflows)"))
-
-  (design-rationale
-    (principle "Progressive disclosure"
-      (explanation "Every API should teach itself — users see only what they need, and can peel back layers as they grow"))
-    (principle "Formally verified layers"
-      (explanation "Idris2 dependent types prove that @beginner is a subset of @intermediate, which is a subset of @expert"))
-    (principle "Smart defaults are type-safe"
-      (explanation "Inferred defaults are validated against type constraints; Idris2 proves they cannot violate invariants"))
-    (principle "Manifest-driven"
-      (explanation "User intent captured in mylangiser.toml; all generation is deterministic and reproducible"))))
+[maintenance-axes]
+scoping-first = true
+axis-1 = "must > intend > like"
+axis-2 = "corrective > adaptive > perfective"
+axis-3 = "systems > compliance > effects"
