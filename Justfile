@@ -2,6 +2,8 @@
 # mylangiser — progressive-disclosure API wrappers via My-Lang
 
 # Default: build and test
+import? "contractile.just"
+
 default: build test
 
 # Build release binary
