@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 #![forbid(unsafe_code)]
 #![allow(
     dead_code,
@@ -13,8 +15,6 @@
     clippy::manual_clamp,
     clippy::type_complexity
 )]
-// SPDX-License-Identifier: MPL-2.0
-// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 //
 // mylangiser library — progressive-disclosure interface generation from
 // complex APIs via My-Lang. This crate provides:

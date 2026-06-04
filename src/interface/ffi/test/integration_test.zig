@@ -1,6 +1,6 @@
-// Mylangiser Integration Tests
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// Mylangiser Integration Tests
 //
 // Verify that the Zig FFI correctly implements the Idris2 ABI for
 // progressive-disclosure layer generation.

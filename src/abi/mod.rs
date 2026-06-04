@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 //
 // ABI module for mylangiser — core types representing the progressive-disclosure
 // interface model. These types mirror the Idris2 formal proofs in src/interface/abi/
