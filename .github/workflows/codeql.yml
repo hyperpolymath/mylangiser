@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0
+# SPDX-License-Identifier: MPL-2.0
 name: CodeQL Security Analysis
 
 on:
@@ -30,7 +30,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - language: javascript-typescript
+          # mylangiser is Rust/Idris2/Zig — none are CodeQL-scannable source
+          # languages, so the previous `javascript-typescript` matrix exited
+          # "no source files" on every run. `actions` scans the workflow files
+          # (which every repo has), matching the estate-wide CodeQL convention.
+          - language: actions
             build-mode: none
 
     steps:
