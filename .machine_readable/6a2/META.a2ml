@@ -3,8 +3,8 @@
 #
 # META.a2ml — Mylangiser meta-level information
 [metadata]
-version = "0.1.0"
-last-updated = "2026-03-21"
+version = "0.1.0"   # authoritative per Cargo.toml; CHANGELOG.adoc top entry says 0.2.0 (discrepancy unresolved)
+last-updated = "2026-06-05"
 
 [project-info]
 license = "MPL-2.0"
@@ -12,7 +12,7 @@ author = "Jonathan D.A. Jewell (hyperpolymath)"
 
 [architecture-decisions]
 decisions = [
-  # No ADRs recorded
+  "Licence migrated from PMPL-1.0-or-later to MPL-2.0 (commit ce87d4b).",
 ]
 
 [development-practices]

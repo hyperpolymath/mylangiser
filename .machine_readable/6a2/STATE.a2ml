@@ -4,10 +4,10 @@
 # STATE.a2ml — Mylangiser project state
 [metadata]
 project = "mylangiser"
-version = "0.1.0"
-last-updated = "2026-03-21"
+version = "0.1.0"   # authoritative per Cargo.toml; CHANGELOG.adoc top entry says 0.2.0 (discrepancy unresolved)
+last-updated = "2026-06-05"
 status = "active"
-session = "converted from scheme — 2026-04-11"
+session = "6a2 state refresh — 2026-06-05"
 
 [project-context]
 name = "Mylangiser"
@@ -15,8 +15,9 @@ purpose = """Generate progressive-disclosure interfaces from complex APIs via My
 completion-percentage = 45
 
 [position]
-phase = "phase-1-complete"   # design | implementation | testing | maintenance | archived
-maturity = "experimental"  # experimental | alpha | beta | production | lts
+phase = "implementation"   # design | implementation | testing | maintenance | archived
+maturity = "alpha"  # experimental | alpha | beta | production | lts
+maturity-note = """Real but incomplete: substantive implementation (Rust CLI/codegen ~1330 LOC across main.rs/manifest/codegen/abi; Idris2 ABI ~863 LOC in Types/Layout/Foreign.idr; Zig FFI ~417 LOC in src/interface/ffi/src/main.zig) plus a working example manifest at examples/simplified-api/mylangiser.toml. "Scaffold" understates it; codegen still in progress."""
 
 [route-to-mvp]
 milestones = [
@@ -36,5 +37,9 @@ actions = [
 ]
 
 [maintenance-status]
-last-run-utc = "2026-03-21T00:00:00Z"
+last-run-utc = "2026-06-05T00:00:00Z"
 last-result = "unknown"  # unknown | pass | warn | fail
+
+[licence]
+spdx = "MPL-2.0"
+migration = "Migrated from PMPL-1.0-or-later to MPL-2.0 (commit ce87d4b)."
