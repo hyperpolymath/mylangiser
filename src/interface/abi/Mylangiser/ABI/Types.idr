@@ -20,6 +20,7 @@ module Mylangiser.ABI.Types
 import Data.Bits
 import Data.So
 import Data.Vect
+import Decidable.Equality
 
 %default total
 
@@ -32,13 +33,10 @@ public export
 data Platform = Linux | Windows | MacOS | BSD | WASM
 
 ||| Compile-time platform detection
-||| This will be set during compilation based on target
+||| This is set to the default target; override with compiler flags.
 public export
 thisPlatform : Platform
-thisPlatform =
-  %runElab do
-    -- Platform detection logic
-    pure Linux  -- Default, override with compiler flags
+thisPlatform = Linux
 
 --------------------------------------------------------------------------------
 -- Disclosure Levels
@@ -112,9 +110,9 @@ record ComplexityScore where
 public export
 mkComplexityScore : Bits32 -> Maybe ComplexityScore
 mkComplexityScore s =
-  case decSo (s <= 100) of
-    Yes prf => Just (MkComplexityScore s)
-    No _    => Nothing
+  case choose (s <= 100) of
+    Left prf  => Just (MkComplexityScore s {inBounds = prf})
+    Right _   => Nothing
 
 ||| Determine which disclosure level an endpoint belongs to based on score.
 ||| Thresholds: 0-33 -> Beginner, 34-66 -> Intermediate, 67-100 -> Expert
@@ -198,12 +196,18 @@ record LayeredWrapper where
   ||| Smart defaults applied at @beginner level
   defaultCount   : Bits32
 
-||| Proof that each layer exposes a non-decreasing number of parameters
+||| Decision procedure: does this wrapper expose a non-decreasing number of
+||| parameters across the three disclosure layers? Returns a proof when it does,
+||| Nothing otherwise (the property is not universally true — it must be checked).
 public export
 layerMonotonic : (w : LayeredWrapper) ->
-  So (w.beginnerParams <= w.intermediateParams &&
-      w.intermediateParams <= w.expertParams)
-layerMonotonic w = ?layerMonotonicProof
+  Maybe (So (w.beginnerParams <= w.intermediateParams &&
+             w.intermediateParams <= w.expertParams))
+layerMonotonic w =
+  case choose (w.beginnerParams <= w.intermediateParams &&
+               w.intermediateParams <= w.expertParams) of
+    Left prf => Just prf
+    Right _  => Nothing
 
 --------------------------------------------------------------------------------
 -- Result Codes
@@ -249,7 +253,49 @@ DecEq Result where
   decEq NullPointer NullPointer = Yes Refl
   decEq EndpointNotFound EndpointNotFound = Yes Refl
   decEq InvalidScore InvalidScore = Yes Refl
-  decEq _ _ = No absurd
+  -- Off-diagonal: every ordered pair of distinct constructors is decidably unequal.
+  decEq Ok Error = No (\case Refl impossible)
+  decEq Ok InvalidParam = No (\case Refl impossible)
+  decEq Ok OutOfMemory = No (\case Refl impossible)
+  decEq Ok NullPointer = No (\case Refl impossible)
+  decEq Ok EndpointNotFound = No (\case Refl impossible)
+  decEq Ok InvalidScore = No (\case Refl impossible)
+  decEq Error Ok = No (\case Refl impossible)
+  decEq Error InvalidParam = No (\case Refl impossible)
+  decEq Error OutOfMemory = No (\case Refl impossible)
+  decEq Error NullPointer = No (\case Refl impossible)
+  decEq Error EndpointNotFound = No (\case Refl impossible)
+  decEq Error InvalidScore = No (\case Refl impossible)
+  decEq InvalidParam Ok = No (\case Refl impossible)
+  decEq InvalidParam Error = No (\case Refl impossible)
+  decEq InvalidParam OutOfMemory = No (\case Refl impossible)
+  decEq InvalidParam NullPointer = No (\case Refl impossible)
+  decEq InvalidParam EndpointNotFound = No (\case Refl impossible)
+  decEq InvalidParam InvalidScore = No (\case Refl impossible)
+  decEq OutOfMemory Ok = No (\case Refl impossible)
+  decEq OutOfMemory Error = No (\case Refl impossible)
+  decEq OutOfMemory InvalidParam = No (\case Refl impossible)
+  decEq OutOfMemory NullPointer = No (\case Refl impossible)
+  decEq OutOfMemory EndpointNotFound = No (\case Refl impossible)
+  decEq OutOfMemory InvalidScore = No (\case Refl impossible)
+  decEq NullPointer Ok = No (\case Refl impossible)
+  decEq NullPointer Error = No (\case Refl impossible)
+  decEq NullPointer InvalidParam = No (\case Refl impossible)
+  decEq NullPointer OutOfMemory = No (\case Refl impossible)
+  decEq NullPointer EndpointNotFound = No (\case Refl impossible)
+  decEq NullPointer InvalidScore = No (\case Refl impossible)
+  decEq EndpointNotFound Ok = No (\case Refl impossible)
+  decEq EndpointNotFound Error = No (\case Refl impossible)
+  decEq EndpointNotFound InvalidParam = No (\case Refl impossible)
+  decEq EndpointNotFound OutOfMemory = No (\case Refl impossible)
+  decEq EndpointNotFound NullPointer = No (\case Refl impossible)
+  decEq EndpointNotFound InvalidScore = No (\case Refl impossible)
+  decEq InvalidScore Ok = No (\case Refl impossible)
+  decEq InvalidScore Error = No (\case Refl impossible)
+  decEq InvalidScore InvalidParam = No (\case Refl impossible)
+  decEq InvalidScore OutOfMemory = No (\case Refl impossible)
+  decEq InvalidScore NullPointer = No (\case Refl impossible)
+  decEq InvalidScore EndpointNotFound = No (\case Refl impossible)
 
 --------------------------------------------------------------------------------
 -- Opaque Handles
@@ -265,8 +311,10 @@ data Handle : Type where
 ||| Returns Nothing if pointer is null
 public export
 createHandle : Bits64 -> Maybe Handle
-createHandle 0 = Nothing
-createHandle ptr = Just (MkHandle ptr)
+createHandle ptr =
+  case choose (ptr /= 0) of
+    Left ok => Just (MkHandle ptr {nonNull = ok})
+    Right _ => Nothing
 
 ||| Extract pointer value from handle
 public export
@@ -304,10 +352,17 @@ ptrSize MacOS = 64
 ptrSize BSD = 64
 ptrSize WASM = 32
 
-||| Pointer type for platform
+||| Pointer type for platform.
+||| Represented as a platform-word-sized integer (the pointee type is phantom,
+||| recording the intended target type without affecting the representation):
+||| 64-bit words on Linux/Windows/MacOS/BSD, 32-bit on WASM.
 public export
 CPtr : Platform -> Type -> Type
-CPtr p _ = Bits (ptrSize p)
+CPtr Linux   _ = Bits64
+CPtr Windows _ = Bits64
+CPtr MacOS   _ = Bits64
+CPtr BSD     _ = Bits64
+CPtr WASM    _ = Bits32
 
 --------------------------------------------------------------------------------
 -- Memory Layout Proofs
