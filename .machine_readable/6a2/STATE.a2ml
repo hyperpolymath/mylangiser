@@ -42,4 +42,4 @@ last-result = "unknown"  # unknown | pass | warn | fail
 
 [licence]
 spdx = "MPL-2.0"
-migration = "Migrated from PMPL-1.0-or-later to MPL-2.0 (commit ce87d4b)."
+migration = "Migrated from MPL-2.0 to MPL-2.0 (commit ce87d4b)."
