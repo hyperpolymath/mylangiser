@@ -7,3 +7,4 @@ modules = Mylangiser.ABI.Types
         , Mylangiser.ABI.Layout
         , Mylangiser.ABI.Foreign
         , Mylangiser.ABI.Proofs
+        , Mylangiser.ABI.Semantics
