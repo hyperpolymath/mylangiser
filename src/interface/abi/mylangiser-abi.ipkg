@@ -9,3 +9,4 @@ modules = Mylangiser.ABI.Types
         , Mylangiser.ABI.Proofs
         , Mylangiser.ABI.Semantics
         , Mylangiser.ABI.Invariants
+        , Mylangiser.ABI.FfiSeam
