@@ -10,3 +10,4 @@ modules = Mylangiser.ABI.Types
         , Mylangiser.ABI.Semantics
         , Mylangiser.ABI.Invariants
         , Mylangiser.ABI.FfiSeam
+        , Mylangiser.ABI.Capstone
