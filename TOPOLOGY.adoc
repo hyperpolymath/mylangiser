@@ -1,14 +1,19 @@
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
-<!-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk> -->
-# TOPOLOGY.md — mylangiser
+== TOPOLOGY.md — mylangiser
 
-## Purpose
+=== Purpose
 
-mylangiser generates progressive-disclosure interfaces for complex APIs via My-Lang. It analyses API complexity, scores each endpoint, and assigns disclosure levels (beginner / intermediate / expert), then generates layered wrapper code with smart defaults for omitted parameters. The goal is to make any API learnable by newcomers while remaining fully expressive for experts. mylangiser targets library and API authors who want to reduce the cognitive load on users without sacrificing power.
+mylangiser generates progressive-disclosure interfaces for complex APIs
+via My-Lang. It analyses API complexity, scores each endpoint, and
+assigns disclosure levels (beginner / intermediate / expert), then
+generates layered wrapper code with smart defaults for omitted
+parameters. The goal is to make any API learnable by newcomers while
+remaining fully expressive for experts. mylangiser targets library and
+API authors who want to reduce the cognitive load on users without
+sacrificing power.
 
-## Module Map
+=== Module Map
 
-```
+....
 mylangiser/
 ├── src/
 │   ├── main.rs                    # CLI entry point (clap): init, validate, generate, build, run, info
@@ -20,11 +25,11 @@ mylangiser/
 ├── verification/                  # Proof harnesses
 ├── container/                     # Stapeln container ecosystem
 └── .machine_readable/             # A2ML metadata
-```
+....
 
-## Data Flow
+=== Data Flow
 
-```
+....
 mylangiser.toml manifest
         │
    ┌────▼────┐
@@ -39,4 +44,4 @@ mylangiser.toml manifest
    ┌────▼────┐
    │ Codegen  │  emit generated/mylangiser/ (layered wrappers with smart defaults)
    └─────────┘
-```
+....
