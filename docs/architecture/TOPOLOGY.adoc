@@ -1,17 +1,15 @@
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
-<!-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk> -->
+== Mylangiser Topology
 
-# Mylangiser Topology
+=== Overview
 
-## Overview
+Mylangiser is a progressive-disclosure interface generator. It analyses
+complex API surfaces, assigns cognitive-load complexity scores, and
+generates layered wrappers at three disclosure levels (@beginner,
+@intermediate, @expert).
 
-Mylangiser is a progressive-disclosure interface generator. It analyses complex
-API surfaces, assigns cognitive-load complexity scores, and generates layered
-wrappers at three disclosure levels (@beginner, @intermediate, @expert).
+=== Module Map
 
-## Module Map
-
-```
+....
 mylangiser/
 ├── CLI Layer (Rust)
 │   ├── src/main.rs              # Entry point: init, validate, generate, build, run, info
@@ -44,11 +42,11 @@ mylangiser/
     ├── .machine_readable/policies/
     ├── .machine_readable/contractiles/
     └── .machine_readable/bot_directives/
-```
+....
 
-## Data Flow
+=== Data Flow
 
-```
+....
                     mylangiser.toml
                          │
                          ▼
@@ -100,36 +98,38 @@ mylangiser/
                         ▼
                   Layered Wrapper
                   (drop-in library)
-```
+....
 
-## Complexity Scoring Formula
+=== Complexity Scoring Formula
 
-```
+....
 score = (required_params * 3)
       + (optional_params * 1)
       + (type_depth * 5)
       + (error_surface * 2)
 
 Clamped to [0, 100].
-```
+....
 
-Thresholds (configurable in mylangiser.toml):
-- 0-33: @beginner
-- 34-66: @intermediate
-- 67-100: @expert
+Thresholds (configurable in mylangiser.toml): - 0-33: @beginner - 34-66:
+@intermediate - 67-100: @expert
 
-## Layer Parameter Visibility
+=== Layer Parameter Visibility
 
-| Level          | Parameters visible         | Error messages      |
-|----------------|----------------------------|---------------------|
-| @beginner      | Required only              | Human-readable      |
-| @intermediate  | Required + half optional   | Typed with context  |
-| @expert        | All (required + optional)  | Raw codes + stack   |
+[cols=",,",options="header",]
+|===
+|Level |Parameters visible |Error messages
+|@beginner |Required only |Human-readable
+|@intermediate |Required + half optional |Typed with context
+|@expert |All (required + optional) |Raw codes + stack
+|===
 
-## Key Invariants
+=== Key Invariants
 
-1. **Layer ordering**: Beginner < Intermediate < Expert (never reversed)
-2. **Parameter monotonicity**: beginner_params <= intermediate_params <= expert_params
-3. **Score bounds**: 0 <= complexity_score <= 100
-4. **Default safety**: smart defaults satisfy parameter type constraints
-5. **Determinism**: same manifest always produces same output
+[arabic]
+. *Layer ordering*: Beginner < Intermediate < Expert (never reversed)
+. *Parameter monotonicity*: beginner_params <= intermediate_params <=
+expert_params
+. *Score bounds*: 0 <= complexity_score <= 100
+. *Default safety*: smart defaults satisfy parameter type constraints
+. *Determinism*: same manifest always produces same output
