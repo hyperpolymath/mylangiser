@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# validate-a2ml.sh — A2ML manifest validation script
+# validate-a2ml.sh — A2ML and DEED manifest validation script
 #
-# Scans for .a2ml files and validates:
+# Scans for .a2ml and .deed files and validates:
 #   1. Required fields: agent-id or pedigree name, version
 #   2. SPDX-License-Identifier header presence
 #   3. Attestation block structure (if present)
@@ -89,7 +89,7 @@ report_issue() {
 }
 
 # ---------------------------------------------------------------------------
-# Validator: check a single .a2ml file
+# Validator: check a single manifest file
 # ---------------------------------------------------------------------------
 validate_a2ml() {
     local file="$1"
@@ -281,15 +281,15 @@ validate_a2ml() {
 }
 
 # ---------------------------------------------------------------------------
-# Main: discover and validate .a2ml files
+# Main: discover and validate .a2ml and .deed files
 # ---------------------------------------------------------------------------
 
-echo "::group::A2ML Manifest Validation"
-echo "Scanning ${SCAN_PATH} for .a2ml files..."
+echo "::group::A2ML and DEED Manifest Validation"
+echo "Scanning ${SCAN_PATH} for .a2ml and .deed files..."
 echo ""
 
-# Find all .a2ml files, excluding .git directory
-mapfile -t a2ml_candidates < <(find "$SCAN_PATH" -name '*.a2ml' -not -path '*/.git/*' -type f | sort)
+# Find all supported manifest files, excluding the .git directory.
+mapfile -t a2ml_candidates < <(find "$SCAN_PATH" -type f \( -name '*.a2ml' -o -name '*.deed' \) -not -path '*/.git/*' | sort)
 
 # Apply paths-ignore filter
 a2ml_files=()
@@ -307,7 +307,7 @@ if [[ $SKIPPED -gt 0 ]]; then
 fi
 
 if [[ ${#a2ml_files[@]} -eq 0 ]]; then
-    echo "::notice::No .a2ml files found in ${SCAN_PATH}"
+    echo "::notice::No .a2ml or .deed files found in ${SCAN_PATH}"
     echo "files_scanned=0" >> "$GITHUB_OUTPUT_FILE" 2>/dev/null || true
     echo "errors=0" >> "$GITHUB_OUTPUT_FILE" 2>/dev/null || true
     echo "warnings=0" >> "$GITHUB_OUTPUT_FILE" 2>/dev/null || true
@@ -315,7 +315,7 @@ if [[ ${#a2ml_files[@]} -eq 0 ]]; then
     exit 0
 fi
 
-echo "Found ${#a2ml_files[@]} .a2ml file(s)"
+echo "Found ${#a2ml_files[@]} manifest file(s) (.a2ml or .deed)"
 echo ""
 
 for file in "${a2ml_files[@]}"; do
